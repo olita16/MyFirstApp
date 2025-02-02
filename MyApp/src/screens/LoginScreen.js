@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   View,
@@ -12,58 +13,18 @@ import {
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 
 import { colors } from "../../styles/global";
 
 import Input from "../components/Input";
 import Button from "../components/Button";
-import CirclePlusSvg from "../../icons/CirclePlusSvg";
-import CircleCrossSvg from "../../icons/CircleCrossSvg";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
-
-const RegistrationScreen = ({ onHasAccount }) => {
-  const [photo, setPhoto] = useState("");
-  const [login, setLogin] = useState("");
+const LoginScreen = ({ onRegister }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(true);
-
-  const handlePhotoUpload = async () => {
-    try {
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (status !== "granted") {
-        alert("Необхідний дозвіл на доступ до галереї");
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log("Помилка при завантаженні фото:", error);
-      alert("Помилка при завантаженні фото");
-    }
-  };
-
-  const handlePhotoRemove = () => {
-    setPhoto("");
-  };
-
-  const handleLoginChange = (value) => {
-    setLogin(value);
-  };
 
   const handleEmailChange = (value) => {
     setEmail(value);
@@ -79,14 +40,14 @@ const RegistrationScreen = ({ onHasAccount }) => {
     setIsPasswordVisible((prev) => !prev);
   };
 
-  const onRegister = async () => {
-    console.log("register");
-    console.log(login, email, password, photo);
+  const onLogin = async () => {
+    console.log("login");
+    console.log(email, password);
   };
 
-// до поправки, коли перейду до теми по навігації
+  // до поправки, коли перейду до теми по навігації
   const onSignUp = () => {
-    onHasAccount();
+    onRegister();
   };
 
   const showButton = (
@@ -109,39 +70,9 @@ const RegistrationScreen = ({ onHasAccount }) => {
           behavior={Platform.OS == "ios" ? "padding" : "height"}
         >
           <View style={styles.formContainer}>
-            <View style={styles.photoContainer}>
-              {photo && (
-                <>
-                  <Image source={{ uri: photo }} style={styles.photo} />
-                  <Pressable
-                    onPress={handlePhotoRemove}
-                    style={styles.circlePlus}
-                  >
-                    <CircleCrossSvg />
-                  </Pressable>
-                </>
-              )}
-
-              {!photo && (
-                <Pressable
-                  onPress={handlePhotoUpload}
-                  style={styles.circlePlus}
-                >
-                  <CirclePlusSvg />
-                </Pressable>
-              )}
-            </View>
-
-            <Text style={styles.title}>Реєстрація</Text>
+            <Text style={styles.title}>Увійти</Text>
 
             <View style={[styles.innerContainer, styles.inputContainer]}>
-              <Input
-                value={login}
-                autofocus={true}
-                placeholder="Логін"
-                onTextChange={handleLoginChange}
-              />
-
               <Input
                 value={email}
                 autofocus={true}
@@ -160,20 +91,17 @@ const RegistrationScreen = ({ onHasAccount }) => {
             </View>
 
             <View style={[styles.innerContainer, styles.buttonContainer]}>
-              <Button onPress={onRegister}>
+              <Button onPress={onLogin}>
                 <Text style={[styles.baseText, styles.loginButtonText]}>
-                  Зареєструватися
+                  Увійти
                 </Text>
               </Button>
 
               <View style={styles.signUpContainer}>
                 <Text style={[styles.baseText, styles.passwordButtonText]}>
-                  Вже є акаунт ?{" "}
-                  <TouchableWithoutFeedback
-                    style={styles.signUpTextHolder}
-                    onPress={onSignUp}
-                  >
-                    <Text style={styles.signUpText}>Увійти</Text>
+                  Немає акаунту?
+                  <TouchableWithoutFeedback onPress={onSignUp}>
+                    <Text style={styles.signUpText}> Зареєструватися</Text>
                   </TouchableWithoutFeedback>
                 </Text>
               </View>
@@ -185,9 +113,14 @@ const RegistrationScreen = ({ onHasAccount }) => {
   );
 };
 
-export default RegistrationScreen;
+export default LoginScreen;
 
 const styles = StyleSheet.create({
+  section: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   container: {
     flex: 1,
     alignItems: "center",
@@ -211,12 +144,12 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: SCREEN_WIDTH,
-    height: "67.61%",
+    height: "55%",
     backgroundColor: colors.white,
     borderTopRightRadius: 25,
     borderTopLeftRadius: 25,
     paddingHorizontal: 16,
-    paddingTop: 92,
+    paddingTop: 32,
   },
   title: {
     fontSize: 30,
@@ -247,30 +180,5 @@ const styles = StyleSheet.create({
   },
   signUpText: {
     textDecorationLine: "underline",
-  },
-  photoContainer: {
-    position: "absolute",
-    top: -60,
-    bottom: 0,
-    height: 120,
-    width: 120,
-    backgroundColor: colors.light_gray,
-    borderRadius: 16,
-    alignSelf: "center",
-  },
-  circlePlus: {
-    position: "absolute",
-    right: -12.5,
-    bottom: 14,
-    height: 25,
-    width: 25,
-  },
-  photo: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    height: 120,
-    width: 120,
-    borderRadius: 16,
   },
 });
