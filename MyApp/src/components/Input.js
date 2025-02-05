@@ -23,7 +23,7 @@ const Input = ({
 
     if (onBlurCustom) {
       onBlurCustom();
-    };
+    }
   };
 
   return (
@@ -42,7 +42,7 @@ const Input = ({
 
       {rightButton}
     </View>
-  )
+  );
 };
 
 const styles = StyleSheet.create({
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   focusedInput: {
     backgroundColor: colors.white,
     borderColor: colors.orange,
-  }
-})
+  },
+});
 
 export default Input;

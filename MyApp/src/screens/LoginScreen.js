@@ -21,7 +21,7 @@ import Button from "../components/Button";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
-const LoginScreen = ({ onRegister }) => {
+const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(true);
@@ -40,14 +40,24 @@ const LoginScreen = ({ onRegister }) => {
     setIsPasswordVisible((prev) => !prev);
   };
 
+  // const onLogin = async () => {
+  //   console.log("login");
+  //   console.log(email, password);
+  // };
+
   const onLogin = async () => {
-    console.log("login");
+    console.log('login')
     console.log(email, password);
+    navigation.navigate('Home');
   };
 
   // до поправки, коли перейду до теми по навігації
+  // const onSignUp = () => {
+  //   onRegister();
+  // };
+
   const onSignUp = () => {
-    onRegister();
+    navigation.navigate('Registration');
   };
 
   const showButton = (
