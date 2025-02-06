@@ -40,21 +40,11 @@ const LoginScreen = ({ navigation }) => {
     setIsPasswordVisible((prev) => !prev);
   };
 
-  // const onLogin = async () => {
-  //   console.log("login");
-  //   console.log(email, password);
-  // };
-
   const onLogin = async () => {
     console.log('login')
     console.log(email, password);
     navigation.navigate('Home');
   };
-
-  // до поправки, коли перейду до теми по навігації
-  // const onSignUp = () => {
-  //   onRegister();
-  // };
 
   const onSignUp = () => {
     navigation.navigate('Registration');
