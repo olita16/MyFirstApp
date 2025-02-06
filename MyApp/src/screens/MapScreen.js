@@ -6,23 +6,23 @@ import * as Location from 'expo-location';
 const MAPS_KEY = "AIzaSyCmsuZojl9jJTxqmOReFxVHBNYpS7EqfQs";
 
 const MapScreen = ({ navigation, route }) => {
-  // const [location, setLocation] = useState(null);
-  // const post = route?.params?.post;
-  // console.log('post', post);
+  const [location, setLocation] = useState(null);
+  const post = route?.params?.post;
+  console.log('post', post);
 
-  // useEffect(() => {
-  //   (async () => {
+  useEffect(() => {
+    (async () => {
       
-  //     let { status } = await Location.requestForegroundPermissionsAsync();
-  //     if (status !== 'granted') {
-  //       Alert.alert('Permission to access location was denied');
-  //       return;
-  //     }
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission to access location was denied');
+        return;
+      }
 
-  //     let location = await Location.getCurrentPositionAsync({});
-  //     setLocation(location);
-  //   })();
-  // }, []);
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    })();
+  }, []);
 
   return (
     <View style={styles.mainContainer}>
@@ -40,7 +40,7 @@ const MapScreen = ({ navigation, route }) => {
         onRegionChange={() => console.log("Region change")}
         onLongPress={(e) => setLocation({ coords: e.nativeEvent.coordinate })}
       >
-        {/* {!!post && (
+        {!!post && (
           <Marker
             coordinate={{
               latitude: post.location.latitude,
@@ -50,7 +50,7 @@ const MapScreen = ({ navigation, route }) => {
             description={post.address}  
             draggable
           />
-        )} */}
+        )}
       </MapView>
     </View>
   );
