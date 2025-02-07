@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   Dimensions,
   StyleSheet,
   FlatList,
-  ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
@@ -17,10 +17,44 @@ import CircleCrossSvg from "../../icons/CircleCrossSvg";
 import LogoutButton from "../components/LogoutButton";
 import UserPost from "../components/UserPost";
 
+import { useDispatch, useSelector } from "react-redux";
+import { logoutUser } from "../redux/user/userOperations";
+import {
+  selectUser,
+  selectIsLoading,
+  selectError,
+} from "../redux/user/userSelectors";
+import {
+  selectPosts,
+  selectPostsLoading,
+  selectPostsError,
+  selectLastCreatedPost,
+} from "../redux/post/postSelectors";
+import { loadPosts } from "../redux/post/postOperations";
+
 const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
 const RegistrationScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
   const [photo, setPhoto] = useState("");
+  const { posts } = useSelector(selectPosts);
+  const { user } = useSelector(selectUser);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
+
+  const lastPost = useSelector(selectLastCreatedPost);
+  const isPostsLoading = useSelector(selectPostsLoading);
+  const postsLoadingError = useSelector(selectPostsError);
+
+  useEffect(() => {
+    if (user?.uid) {
+      dispatch(loadPosts(user.uid));
+    }
+  }, [lastPost, user]);
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+  };
 
   const handlePhotoUpload = async () => {
     try {
@@ -28,7 +62,7 @@ const RegistrationScreen = ({ navigation }) => {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        alert("Надай дозвіл на доступ до галереї");
+        alert("Потрібно надати дозвіл на доступ до галереї");
         return;
       }
 
@@ -52,29 +86,6 @@ const RegistrationScreen = ({ navigation }) => {
     setPhoto("");
   };
 
-  const testPosts = [
-    {
-      image: require("../../assets/img/wood.png"),
-      title: "Ліс",
-      location: "Ivano-Frankivs'k Region, Ukraine",
-    },
-    {
-      image: require("../../assets/img/sunset.png"),
-      title: "Захід на Чорному морі",
-      location: "Ivano-Frankivs'k Region, Ukraine",
-    },
-    {
-      image: require("../../assets/img/Italy.png"),
-      title: "Старий будиночок у Венеції",
-      location: "Ivano-Frankivs'k Region, Ukraine",
-    },
-    {
-      image: require("../../assets/img/wood.png"),
-      title: "Ліс",
-      location: "Ivano-Frankivs'k Region, Ukraine",
-    },
-  ];
-
   return (
     <>
       <Image
@@ -85,12 +96,13 @@ const RegistrationScreen = ({ navigation }) => {
 
       <View style={styles.container}>
         <View style={styles.formContainer}>
-          <LogoutButton
-            style={styles.logoutButton}
-            onPress={() => navigation.navigate("Login")}
-          />
+          {!isLoading ? (
+            <LogoutButton style={styles.logoutButton} onPress={handleLogout} />
+          ) : (
+            <ActivityIndicator size="small" style={styles.logoutButton} />
+          )}
 
-          <ScrollView style={styles.photoContainer}>
+          <View style={styles.photoContainer}>
             {photo && (
               <>
                 <Image source={{ uri: photo }} style={styles.photo} />
@@ -108,21 +120,33 @@ const RegistrationScreen = ({ navigation }) => {
                 <CirclePlusSvg />
               </Pressable>
             )}
-          </ScrollView>
+          </View>
 
-          <Text style={styles.title}>Natali Romanova</Text>
+          <Text style={styles.title}>{user?.displayName}</Text>
 
-          <FlatList
-            style={styles.postsContainer}
-            data={testPosts}
-            renderItem={({ item }) => (
-              <UserPost
-                image={item.image}
-                title={item.title}
-                location={item.location}
-              />
-            )}
-          />
+          {/* Posts */}
+          {isPostsLoading ? (
+            <ActivityIndicator size="large" color={colors.blue} />
+          ) : (
+            <FlatList
+              style={styles.postsContainer}
+              data={posts}
+              renderItem={({ item }) => (
+                <UserPost
+                  key={item.id}
+                  image={{ uri: item.image }}
+                  title={item.title}
+                  location={item.address}
+                  onLocationPress={() =>
+                    navigation.navigate("MapScreen", { postId: item.id })
+                  }
+                  onCommentsPress={() =>
+                    navigation.navigate("CommentsScreen", { postId: item.id })
+                  }
+                />
+              )}
+            />
+          )}
         </View>
       </View>
     </>

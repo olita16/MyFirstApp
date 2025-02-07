@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 
@@ -21,8 +22,12 @@ import Button from "../components/Button";
 import CirclePlusSvg from "../../icons/CirclePlusSvg";
 import CircleCrossSvg from "../../icons/CircleCrossSvg";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("screen");
+import { useSelector, useDispatch } from "react-redux";
+import { selectIsLoading, selectError } from "../redux/user/userSelectors";
+import { registerUser } from "../redux/user/userOperations";
+import { resetError } from "../redux/user/userSlice";
 
+const { width: SCREEN_WIDTH } = Dimensions.get("screen");
 
 const RegistrationScreen = ({ navigation }) => {
   const [photo, setPhoto] = useState("");
@@ -30,6 +35,13 @@ const RegistrationScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(true);
+  const isLoading = useSelector(selectIsLoading);
+  const error = useSelector(selectError);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(resetError());
+  }, []);
 
   const handlePhotoUpload = async () => {
     try {
@@ -79,24 +91,15 @@ const RegistrationScreen = ({ navigation }) => {
     setIsPasswordVisible((prev) => !prev);
   };
 
-  // const onRegister = async () => {
-  //   console.log("register");
-  //   console.log(login, email, password, photo);
-  // };
-
   const onRegister = async () => {
-    console.log('register');
+    console.log("register");
     console.log(login, email, password, photo);
-    navigation.navigate('Home');
+    dispatch(registerUser({ email, password, login }));
+    navigation.navigate("Home");
   };
 
-// до поправки, коли перейду до теми по навігації
-  // const onSignUp = () => {
-  //   onHasAccount();
-  // };
-
   const onSignUp = () => {
-    navigation.navigate('Login');
+    navigation.navigate("Login");
   };
 
   const showButton = (
@@ -105,94 +108,100 @@ const RegistrationScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  return (
-    <Pressable style={{ flex: 1 }} onPress={() => Keyboard.dismiss()}>
-      <>
-        <Image
-          source={require("../../assets/img/BG for App.png")}
-          resizeMode="cover"
-          style={styles.img}
-        />
+return (
+  <Pressable style={{ flex: 1 }} onPress={() => Keyboard.dismiss()}>
+    <>
+      <Image
+        source={require("../../assets/img/BG for App.png")}
+        resizeMode="cover"
+        style={styles.img}
+      />
 
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS == "ios" ? "padding" : "height"}
-        >
-          <View style={styles.formContainer}>
-            <View style={styles.photoContainer}>
-              {photo && (
-                <>
-                  <Image source={{ uri: photo }} style={styles.photo} />
-                  <Pressable
-                    onPress={handlePhotoRemove}
-                    style={styles.circlePlus}
-                  >
-                    <CircleCrossSvg />
-                  </Pressable>
-                </>
-              )}
-
-              {!photo && (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS == "ios" ? "padding" : "height"}
+      >
+        <View style={styles.formContainer}>
+          <View style={styles.photoContainer}>
+            {photo && (
+              <>
+                <Image source={{ uri: photo }} style={styles.photo} />
                 <Pressable
-                  onPress={handlePhotoUpload}
+                  onPress={handlePhotoRemove}
                   style={styles.circlePlus}
                 >
-                  <CirclePlusSvg />
+                  <CircleCrossSvg />
                 </Pressable>
-              )}
-            </View>
+              </>
+            )}
 
-            <Text style={styles.title}>Реєстрація</Text>
+            {!photo && (
+              <Pressable
+                onPress={handlePhotoUpload}
+                style={styles.circlePlus}
+              >
+                <CirclePlusSvg />
+              </Pressable>
+            )}
+          </View>
 
-            <View style={[styles.innerContainer, styles.inputContainer]}>
-              <Input
-                value={login}
-                autofocus={true}
-                placeholder="Логін"
-                onTextChange={handleLoginChange}
-              />
+          <Text style={styles.title}>Реєстрація</Text>
 
-              <Input
-                value={email}
-                autofocus={true}
-                placeholder="Адреса електронної пошти"
-                onTextChange={handleEmailChange}
-              />
+          <View style={[styles.innerContainer, styles.inputContainer]}>
+            <Input
+              value={login}
+              autofocus={true}
+              placeholder="Логін"
+              onTextChange={handleLoginChange}
+            />
 
-              <Input
-                value={password}
-                placeholder="Пароль"
-                rightButton={showButton}
-                outerStyles={styles.passwordButton}
-                onTextChange={handlePasswordChange}
-                secureTextEntry={isPasswordVisible}
-              />
-            </View>
+            <Input
+              value={email}
+              autofocus={true}
+              placeholder="Адреса електронної пошти"
+              onTextChange={handleEmailChange}
+            />
 
-            <View style={[styles.innerContainer, styles.buttonContainer]}>
+            <Input
+              value={password}
+              placeholder="Пароль"
+              rightButton={showButton}
+              outerStyles={styles.passwordButton}
+              onTextChange={handlePasswordChange}
+              secureTextEntry={isPasswordVisible}
+            />
+          </View>
+
+          <View style={[styles.innerContainer, styles.buttonContainer]}>
+            {isLoading ? (
+              <ActivityIndicator size="large" />
+            ) : (
               <Button onPress={onRegister}>
                 <Text style={[styles.baseText, styles.loginButtonText]}>
                   Зареєструватися
                 </Text>
               </Button>
+            )}
 
-              <View style={styles.signUpContainer}>
-                <Text style={[styles.baseText, styles.passwordButtonText]}>
-                  Вже є акаунт ?{" "}
-                  <TouchableWithoutFeedback
-                    style={styles.signUpTextHolder}
-                    onPress={onSignUp}
-                  >
-                    <Text style={styles.signUpText}>Увійти</Text>
-                  </TouchableWithoutFeedback>
-                </Text>
-              </View>
+            {error && <Text style={styles.errorText}>{error}</Text>}
+
+            <View style={styles.signUpContainer}>
+              <Text style={[styles.baseText, styles.passwordButtonText]}>
+                Вже є акаунт ?{" "}
+                <TouchableWithoutFeedback
+                  style={styles.signUpTextHolder}
+                  onPress={onSignUp}
+                >
+                  <Text style={styles.signUpText}>Увійти</Text>
+                </TouchableWithoutFeedback>
+              </Text>
             </View>
           </View>
-        </KeyboardAvoidingView>
-      </>
-    </Pressable>
-  );
+        </View>
+      </KeyboardAvoidingView>
+    </>
+  </Pressable>
+);
 };
 
 export default RegistrationScreen;
@@ -282,5 +291,9 @@ const styles = StyleSheet.create({
     height: 120,
     width: 120,
     borderRadius: 16,
+  },
+  errorText: {
+    color: colors.red,
+    textAlign: "center",
   },
 });

@@ -1,5 +1,6 @@
 import { FC, useEffect, useState, useRef } from "react";
 import {
+  ActivityIndicator,
   Image,
   KeyboardAvoidingView,
   StyleSheet,
@@ -21,10 +22,18 @@ import Trash from "../../icons/Trash";
 import AddPhoto from "../../icons/AddPhoto";
 import LocationIcon from "../../icons/LocationIcon";
 
-const PLACES_KEY = "AIzaSyAhxqfyeRiiSj3Os9KyN3TcVFCxk6hQqh0";
+import { useDispatch, useSelector } from "react-redux";
+import { createPost } from "../redux/post/postOperations";
+import { selectPostCreate } from "../redux/post/postSelectors";
+import { selectUser } from "../redux/user/userSelectors";
+import { uploadImage } from "../utils/firebaseStore";
+
+const PLACES_KEY = "AIzaSyDRvjnX_xm5HQVCvUgfV1008nNAADWnaNg";
 
 const CreatePostScreen = ({ navigation, route }) => {
+  const dispatch = useDispatch();
   const [facing] = useState("back");
+  const { user } = useSelector(selectUser);
   const [permission, requestPermission] = useCameraPermissions();
   const [selectedImage, setSelectedImage] = useState(null);
   const [title, setTitle] = useState("");
@@ -32,6 +41,13 @@ const CreatePostScreen = ({ navigation, route }) => {
   const cameraView = useRef(null);
   const placesRef = useRef(null);
   const [location, setLocation] = useState(null);
+  const { lastPost, isLoading, error } = useSelector(selectPostCreate);
+
+  useEffect(() => {
+    if (lastPost) {
+      navigation.navigate("PostsScreen");
+    }
+  }, [lastPost]);
 
   if (!permission) {
     return <View style={styles.section} />;
@@ -41,7 +57,7 @@ const CreatePostScreen = ({ navigation, route }) => {
     return (
       <View style={styles.section}>
         <Text style={styles.message}>
-          Нам потрібен дозвіл на використання камери
+          Надай дозвіл на використання камери
         </Text>
         <TouchableOpacity onPress={requestPermission}>
           <Text>Надати дозвіл</Text>
@@ -92,12 +108,31 @@ const CreatePostScreen = ({ navigation, route }) => {
     placesRef.current?.clear();
   };
 
+  const uploadImageToStorage = async () => {
+    if (!selectedImage) return;
+
+    try {
+      const response = await fetch(selectedImage);
+      const file = await response.blob();
+      const fileName = selectedImage.split("/").pop();
+      const fileType = file.type;
+      const imageFile = new File([file], fileName, { type: fileType });
+
+      const uploadedImageUrl = await uploadImage(user.uid, imageFile, fileName);
+
+      return uploadedImageUrl;
+    } catch (e) {
+      console.log(e);
+      return null;
+    }
+  };
+
   const onPublish = async () => {
     try {
       let { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        alert("Необхідний дозвіл на визначення місцезнаходження");
+        alert("Надай дозвіл на визначення місцезнаходження");
         return;
       }
 
@@ -105,7 +140,9 @@ const CreatePostScreen = ({ navigation, route }) => {
       setLocation(currentLocation.coords);
 
       const post = {
-        image: selectedImage,
+        id: user.uid + Date.now().toString(32),
+        userId: user.uid,
+        image: await uploadImageToStorage(selectedImage),
         title,
         address,
         location: {
@@ -114,13 +151,10 @@ const CreatePostScreen = ({ navigation, route }) => {
         },
       };
 
-      console.log("Post with location:", post);
-
+      console.log("post:", post);
       onClearData();
 
-      navigation.navigate("PostsScreen", {
-        post: post,
-      });
+      dispatch(createPost(post));
     } catch (error) {
       console.log("Error publishing post:", error);
       alert("Помилка при публікації поста");
@@ -129,132 +163,132 @@ const CreatePostScreen = ({ navigation, route }) => {
 
   const isDisabled = !(title && address && selectedImage);
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <View style={styles.imgContainer}>
-          {!selectedImage ? (
-            <CameraView style={styles.camera} facing={facing} ref={cameraView}>
-              <View style={styles.cameraContent}>
-                <TouchableOpacity
-                  style={styles.cameraIconWrapper}
-                  onPress={takePicture}
-                >
-                  <AddPhoto width={24} height={24} />
-                </TouchableOpacity>
-              </View>
-            </CameraView>
-          ) : (
-            <>
-              <Image source={{ uri: selectedImage }} style={styles.img} />
+return (
+  <View style={styles.section}>
+    <View style={styles.imageContainer}>
+      <View style={styles.imgContainer}>
+        {!selectedImage ? (
+          <CameraView style={styles.camera} facing={facing} ref={cameraView}>
+            <View style={styles.cameraContent}>
               <TouchableOpacity
                 style={styles.addPhotoWrapper}
-                onPress={() => setSelectedImage(null)}
+                onPress={takePicture}
               >
                 <AddPhoto width={24} height={24} />
               </TouchableOpacity>
-            </>
-          )}
-        </View>
-
-        <TouchableOpacity onPress={pickImage}>
-          <Text style={[styles.buttonText, styles.secondaryText]}>
-            {selectedImage ? "Змінити фото" : "Завантажте фото"}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={{ flex: 1 }}>
-        <KeyboardAvoidingView style={{ flex: 1 }}>
-          <Input
-            value={title}
-            placeholder="Назва..."
-            outerStyles={styles.input}
-            onTextChange={setTitle}
-          />
-
-          <View style={styles.locationInput}>
-            <LocationIcon width={24} height={24} style={styles.location} />
-            <GooglePlacesAutocomplete
-              ref={placesRef}
-              placeholder="Місцевість..."
-              minLength={4}
-              enablePoweredByContainer={false}
-              fetchDetails
-              onPress={(data, details = null) => {
-                setAddress(data.description);
-              }}
-              query={{ key: PLACES_KEY }}
-              styles={{
-                container: {
-                  flex: 1,
-                },
-                textInputContainer: {
-                  flexDirection: "row",
-                  paddingHorizontal: 0,
-                },
-                textInput: {
-                  paddingVertical: 5,
-                  paddingHorizontal: 28,
-                  fontSize: 15,
-                  flex: 1,
-                  borderBottomWidth: 1,
-                  borderColor: colors.border_gray,
-                },
-                row: {
-                  backgroundColor: "#FFFFFF",
-                  padding: 13,
-                  height: 44,
-                  flexDirection: "row",
-                },
-                predefinedPlacesDescription: {
-                  color: "#1faadb",
-                },
-                listView: {
-                  maxHeight: 160,
-                },
-              }}
-            />
-          </View>
-        </KeyboardAvoidingView>
-
-        <View>
-          <Button
-            buttonStyle={styles.unactiveBtn}
-            onPress={onPublish}
-            isDisabled={isDisabled}
-          >
-            <Text
-              style={{
-                ...styles.buttonText,
-                ...(isDisabled ? styles.unactiveBtnText : null),
-              }}
+            </View>
+          </CameraView>
+        ) : (
+          <>
+            <Image source={{ uri: selectedImage }} style={styles.img} />
+            <TouchableOpacity
+              style={styles.addPhotoWrapper}
+              onPress={() => setSelectedImage(null)}
             >
-              Опублікувати
-            </Text>
-          </Button>
-        </View>
+              <AddPhoto width={24} height={24} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
-      <View
-        style={{
-          flexDirection: "column",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Button buttonStyle={styles.deleteBtn} onPress={onClearData}>
-          <Trash width={24} height={24} />
-        </Button>
-      </View>
+      <TouchableOpacity onPress={pickImage}>
+        <Text style={[styles.btnText, styles.grayText]}>
+          {selectedImage ? "Змінити фото" : "Завантажте фото"}
+        </Text>
+      </TouchableOpacity>
     </View>
-  );
+
+    <View style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }}>
+        <Input
+          value={title}
+          placeholder="Назва..."
+          outerStyles={styles.input}
+          onTextChange={setTitle}
+        />
+
+        <View style={styles.locationInput}>
+          <LocationIcon width={24} height={24} style={styles.mapMarker} />
+          <GooglePlacesAutocomplete
+            ref={placesRef}
+            placeholder="Місцевість..."
+            minLength={4}
+            enablePoweredByContainer={false}
+            fetchDetails
+            onPress={(data, details = null) => {
+              setAddress(data.description);
+            }}
+            query={{ key: PLACES_KEY }}
+            styles={{
+              container: {
+                flex: 1,
+              },
+              textInputContainer: {
+                flexDirection: "row",
+                paddingHorizontal: 0,
+              },
+              textInput: {
+                paddingVertical: 5,
+                paddingHorizontal: 28,
+                fontSize: 15,
+                flex: 1,
+                borderBottomWidth: 1,
+                borderColor: colors.border_gray,
+              },
+              row: {
+                backgroundColor: "#FFFFFF",
+                padding: 13,
+                height: 44,
+                flexDirection: "row",
+              },
+              predefinedPlacesDescription: {
+                color: "#1faadb",
+              },
+              listView: {
+                maxHeight: 160,
+              },
+            }}
+          />
+        </View>
+      </KeyboardAvoidingView>
+
+      {isLoading ? (
+        <ActivityIndicator size="large" />
+      ) : (
+        <Button onPress={onPublish} isDisabled={isDisabled}>
+          <Text
+            style={{
+              ...styles.buttonText,
+              ...(isDisabled ? styles.unactiveBtnText : null),
+            }}
+          >
+            Опублікувати
+          </Text>
+        </Button>
+      )}
+
+      {error && <Text style={styles.error}>{error}</Text>}
+    </View>
+
+    <View
+      style={{
+        flexDirection: "column",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <Button buttonStyle={styles.deleteBtn} onPress={onClearData}>
+        <Trash width={24} height={24} />
+      </Button>
+    </View>
+  </View>
+);
 };
 
 export default CreatePostScreen;
 
 const styles = StyleSheet.create({
-  container: {
+  section: {
     flex: 1,
     gap: 32,
     paddingVertical: 32,
